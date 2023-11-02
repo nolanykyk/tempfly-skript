@@ -1,0 +1,260 @@
+# MADE BY NOLAN (discord.gg/mcdevs)
+
+# READ ME!!!!
+
+# Dependencies
+
+# - PlaceHolderAPI
+# - Skript-Placeholders
+# - Skript (working version)
+
+# Skript placeholders and placeholderapi are NOT required if you don't need the placeholder for tempfly
+
+# PLACEHOLDERS BELOW
+
+# %tempflight_left% # Displays the amount of temp flight you have left
+# %tempflight_enable_disable% # Displays if your temp flight is enabled or not
+
+options: # Configure options here
+
+	# Help Menu
+    
+	help1: &9&lTEMP FLY HELP MENU
+	help2: &e&lADMIN COMMANDS
+	help3: &7/give-all-flight <amount>
+	help4: &7/remove-all-flight
+	help5: &7/grant-flight <player> <amount>
+	help6: &7/remove-flight <player> <amount>
+	help7: &7/tempfly <chat/actionbar> <enable/disable>
+	help8: &a&lPLAYER COMMANDS
+	help9: &7/tempfly flight <enable/disable>
+	help10: &7/tempfly-check <player>
+
+	# Permissions
+    
+	tempfly_help: tempfly.help
+	tempfly_a: tempfly.admin	
+	grantflight: tempfly.grantflight
+	enable_disable_messages: tempfly.messages
+	removeflight: tempfly.removeflight
+
+	# Messages
+    
+	tempfly_check_other_has_left: &a%arg-1% has %{flighttime::%arg-1%}% seconds left
+	tempfly_check_other_has_noneleft: &a%arg-1% has 0 seconds left
+	tempfly_check_you_have_left: &aYou have %{flighttime::%player%}% seconds left
+	tempfly_check_you_have_leftnone: &aYou have 0 seconds left
+	lost_time_all: &cYou've lost all your time on temp fly
+	remove_time_all: &cYou've removed all flight from all online players
+	grant_time_all: &aYou've given %arg-1% seconds to all online players
+	lost_time: &cYou've lost %arg-2% seconds from your current flight time: &f%{flighttime::%arg-1%}% seconds
+	removed_time: &cYou removed %arg-2% seconds from %arg-1%
+	recieved_time: &aYou've recieved %arg-2% seconds to your flight time
+	recieved_time_all: &aYou've recieved %arg-1% seconds to your flight time
+	granted_time: &aYou've given %arg-2% seconds to %arg-1%
+	enabled_flight: &aYou've enabled flight
+	disabled_flight: &cYou've disabled flight
+	every_one_second: &aYou have %{flighttime::%loop-player%}% seconds left # If enabled, shows player how much time they have left every second
+
+	# Error Messages
+    
+	tempfly_usage: &9&lTEMP FLY HELP &8| &a&lPLAYER &a/tempfly &7flight <enable/disable>
+	tempfly_check_usage: &cPlease use &7/tempfly-check <player>
+	error_message_time_out: &cYou've run out of time to use &7/tempfly
+	error_message_wrong_command: &cWrong command usage, please use &7/tempfly
+	error_message_missing_permissions: &cYou do not have permission to use this command
+	flight_alreadydisabled: &cFlight is already disabled
+	flight_alreadyenabled: &aFlight is already enabled
+    
+    # Other
+    
+	startingtime: 30 # Seconds
+	time_format: s # <s/m/h>
+
+on placeholderapi placeholder request for the prefix "tempflight":
+	if the identifier is "left":
+		if {flighttime::%player%} is set:
+			set the result to "%{flighttime::%player%}%{@time_format}"
+		if {flighttime::%player%} is not set:
+			set the result to "0{@time_format}"
+	if the identifier is "enable_disable":
+		if {flight::%player%} is true:
+			set the result to "&aEnabled"
+		if {flight::%player%} is false:
+			set the result to "&cDisabled"
+		if {flight::%player%} is not set:
+			set the result to "&cDisabled"
+	
+on first join:
+	set {flighttime::%player%} to {@startingtime}
+
+command /tempfly-help:
+	permission: {@tempfly_help}
+	permission message: {@error_message_missing_permissions}
+	trigger:
+		send "" to executor
+		send "{@help1}" to executor
+		send "" to executor
+		send "{@help2}" to executor
+		send "{@help3}" to executor
+		send "{@help4}" to executor
+		send "{@help5}" to executor
+		send "{@help6}" to executor
+		send "{@help7}" to executor
+		send "" to executor
+		send "{@help8}" to executor
+		send "{@help9}" to executor
+		send "{@help10}" to executor
+
+command /remove-all-flight:
+	permission: {@removeflight}
+	permission message: {@error_message_missing_permissions}
+	trigger:
+		loop all players:
+			set {flighttime::%loop-player%} to 0
+			set {flight::%loop-player%} to false
+			send action bar "{@remove_time_all}" to executor
+			send "{@lost_time_all}" to loop-player
+			set {flighttime} to true
+
+command /give-all-flight [<number>]:
+	permission: {@grantflight}
+	permission message: {@error_message_missing_permissions}
+	trigger:
+		loop all players:
+			add arg-1 to {flighttime::%loop-player%}
+			send action bar "{@grant_time_all}" to executor
+			send "{@lost_time_all}" to loop-player
+
+command /remove-flight [<player>] [<number>]:
+	permission: {@removeflight}
+	permission message: {@error_message_missing_permissions}
+	trigger:
+		reduce {flighttime::%player%} by arg-2
+		send "{@removed_time}" to executor
+		send "{@lost_time}" to arg-1
+
+command /grant-flight [<player>] [<number>]:
+	permission: {@grantflight}
+	permission message: {@error_message_missing_permissions}
+	trigger:
+		add arg-2 to {flighttime::%player%}
+		send "{@recieved_time}" to arg-1 
+		send "{@granted_time}" to executor
+
+command /tempfly <string> <string>:
+	usage: {@tempfly_usage}
+	trigger:
+		if arg-2 is not "enable" or "disable":
+			send "{@tempfly_usage}" to executor
+		if arg-1 is "actionbar":
+			if player has permission "{@enable_disable_messages}":
+				if arg-2 is "enable":
+					if {flight_message_enabled_every_second_actionbar} is false:
+						send "&aYou've enabled flight messages every second for players! &7(Actionbar)" to player
+						set {flight_message_enabled_every_second} to true
+						set {flight_message_enabled_every_second_actionbar} to true
+					else if {flight_message_enabled_every_second_actionbar} is true: 
+						send "&aYou already have flight messages every second for players! &7(Actionbar) &anabled" to player
+					if {flight_message_enabled_every_second_actionbar} is not set: 
+						send "&aYou've enabled flight messages every second for players! &7(Actionbar)" to player
+						set {flight_message_enabled_every_second} to true
+						set {flight_message_enabled_every_second_actionbar} to true
+				else if arg-2 is "disable":
+					if {flight_message_enabled_every_second_actionbar} is true:
+						send "&cYou've disabled flight messages every second for players! &7(Actionbar)" to player
+						set {flight_message_enabled_every_second} to false
+						set {flight_message_enabled_every_second_actionbar} to false
+					else if {flight_message_enabled_every_second_actionbar} is false: 
+						send "&cYou already have flight messages every second for players! &7(Actionbar) &cdisabled" to player
+					if {flight_message_enabled_every_second_actionbar} is not set:
+						send "&cYou've disabled flight messages every second for players! &7(Actionbar)" to player
+						set {flight_message_enabled_every_second} to false
+						set {flight_message_enabled_every_second_actionbar} to false
+		if arg-1 is "chat":
+			if player has permission "{@enable_disable_messages}":
+				if arg-2 is "enable":
+					if {flight_message_enabled_every_second_chat} is false:
+						send "&aYou've enabled flight messages every second for players! &7(Chat)" to player
+						set {flight_message_enabled_every_second} to true
+						set {flight_message_enabled_every_second_chat} to true
+					else if {flight_message_enabled_every_second_chat} is true: 
+						send "&aYou already have flight messages every second for players! &7(Chat) &aenabled" to player
+					if {flight_message_enabled_every_second_chat} is not set: 
+						send "&aYou've enabled flight messages every second for players! &7(Chat)" to player
+						set {flight_message_enabled_every_second} to true
+						set {flight_message_enabled_every_second_chat} to true
+				if arg-2 is "disable":
+					if {flight_message_enabled_every_second_chat} is true:
+						send "&cYou've disabled flight messages every second for players! &7(Chat)" to player
+						set {flight_message_enabled_every_second} to false
+						set {flight_message_enabled_every_second_chat} to false
+					else if {flight_message_enabled_every_second_chat} is false: 
+						send "&cYou already have flight messages every second for players! &7(Chat) &cdisabled" to player
+					if {flight_message_enabled_every_second_chat} is not set:
+						send "&cYou've disabled flight messages every second for players! &7(Chat)" to player
+						set {flight_message_enabled_every_second} to false
+						set {flight_message_enabled_every_second_chat} to false
+		if arg-1 is "flight":
+			if arg-2 is "enable":
+				if {flighttime::%player%} is greater than 1:
+					if {flight::%player%} is false:
+						send action bar "{@enabled_flight}" to executor
+						set {flight::%player%} to true
+						set player's flight mode to true
+						set {flighttime} to false
+					else if {flight::%player%} is not set:
+						send action bar "{@enabled_flight}" to executor
+						set {flight::%player%} to true
+						set player's flight mode to true
+						set {flighttime} to false
+					else if {flight::%player%} is true:
+						send action bar "{@flight_alreadyenabled}" to executor
+				if {flighttime::%player%} is less than 1:
+					send action bar "{@error_message_time_out}" to executor
+			if arg-2 is "disable":
+				if {flighttime::%player%} is less than 1:
+					send action bar "{@error_message_time_out}" to executor
+				else if {flighttime::%player%} is greater than 1:
+					if {flight::%player%} is true:
+						send action bar "{@disabled_flight}" to executor
+						set player's flight mode to false
+						set {flight::%player%} to false
+					else if {flight::%player%} is false:
+						send action bar "{@flight_alreadydisabled}" to executor
+
+command /tempfly-check [<player>]:
+	usage: {@tempfly_check_usage}
+	trigger:
+		if arg-1 is not set:
+			if {flighttime::%player%} is set:
+				send action bar "{@tempfly_check_you_have_left}" to executor
+			if {flighttime::%player%} is not set:
+				send action bar "{@tempfly_check_you_have_leftnone}" to executor
+		if arg-1 is set:
+			if {flighttime::%player%} is set:
+				send action bar "{@tempfly_check_other_has_left}" to executor
+			if {flighttime::%player%} is not set:
+				send action bar "{@tempfly_check_other_has_noneleft}" to executor
+
+every 1 second:
+	loop all players:
+		if {flight::%loop-player%} is true:
+			if {flighttime} is true:
+				stop
+			if {flighttime} is false:
+				if {flighttime::%loop-player%} is less than 1:
+					send action bar "{@error_message_time_out}" to loop-player
+					set loop-player's flight mode to false
+					set {flighttime} to true
+					set {flight::%loop-player%} to false
+
+every 1 second:
+	loop all players:
+		if {flight::%loop-player%} is true:
+			remove 1 from {flighttime::%loop-player%}
+			if {flight_message_enabled_every_second} is true:
+				if {flight_message_enabled_every_second_chat} is true:
+					send "{@every_one_second}" to loop-player
+				if {flight_message_enabled_every_second_actionbar} is true:
+					send action bar "{@every_one_second}" to loop-player
